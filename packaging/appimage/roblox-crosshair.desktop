@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Roblox Fadenkreuz
+GenericName=Fadenkreuz-Overlay
+Comment=Durchklickbares Fadenkreuz in der Bildschirmmitte ein-/ausblenden
+Exec=roblox-crosshair --toggle
+Icon=roblox-crosshair
+Terminal=false
+Categories=Game;Utility;
+Keywords=crosshair;fadenkreuz;roblox;overlay;
