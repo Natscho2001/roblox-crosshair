@@ -62,7 +62,7 @@ jobs:
         run: |
           mkdir -p AppDir/usr/bin
           cp "target/$TARGET/release/roblox-crosshair" AppDir/usr/bin/
-          cp packaging/appimage/roblox-crosshair.desktop packaging/appimage/roblox-crosshair.svg AppDir/
+          cp packaging/appimage/roblox-crosshair.desktop packaging/appimage/roblox-crosshair.png AppDir/
           ln -s usr/bin/roblox-crosshair AppDir/AppRun
           curl -sSfL -o appimagetool \
             https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
