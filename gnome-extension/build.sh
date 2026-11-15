@@ -1,9 +1,10 @@
 #!/bin/sh
 # Build the installable extension zip: gnome-extension/build.sh [out-dir]
 set -eu
+# Output dir relative to the caller's cwd (default: <repo>/dist).
+OUT=$(realpath -m "${1:-$(dirname "$0")/../dist}")
 cd "$(dirname "$0")"
 UUID=$(sed -n 's/.*"uuid": *"\([^"]*\)".*/\1/p' metadata.json)
-OUT=$(realpath "${1:-../dist}")
 STAGE=$(mktemp -d)
 trap 'rm -rf "$STAGE"' EXIT
 mkdir -p "$STAGE/schemas" "$OUT"
