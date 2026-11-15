@@ -14,10 +14,85 @@ legt – zum Beispiel für Roblox „Murder Mystery 2“, wo das eingebaute Fade
 > Bildschirm – es liest nichts aus dem Spiel, verändert nichts am Spiel und schickt keine
 > Eingaben. Für Roblox ist es nicht anders als ein Aufkleber auf dem Monitor.
 
-Gemacht für **Bazzite / Fedora mit KDE Plasma 6 unter Wayland**. Es muss nichts per
-`dnf` oder `rpm-ostree` installiert werden: Das Programm ist eine einzelne Datei.
-Funktioniert auch unter Sway und Hyprland, **nicht** unter GNOME und nicht in einer
-X11-Sitzung.
+Es gibt zwei Ausführungen – je nach Desktop:
+
+| Desktop | Was du brauchst | Anleitung |
+|---|---|---|
+| **GNOME** (z. B. Bazzite GNOME) | die **GNOME-Erweiterung** | [Abschnitt GNOME](#gnome-z-b-bazzite-gnome) |
+| **KDE Plasma 6**, Sway, Hyprland (Wayland) | das Programm `roblox-crosshair` (einzelne Datei oder AppImage) | ab Schritt 1 |
+
+Welcher Desktop läuft, zeigt im Terminal: `echo $XDG_CURRENT_DESKTOP`.
+Auf beiden muss nichts per `dnf` oder `rpm-ostree` installiert werden.
+
+---
+
+## GNOME (z. B. Bazzite GNOME)
+
+GNOME erlaubt fremden Programmen keine Overlays – deshalb gibt es dort eine kleine
+**GNOME-Erweiterung**. Sie kann sogar mehr als das Programm für KDE:
+
+- **folgt dem Mauszeiger**, wenn ohne Shift-Lock gespielt wird (dann zielt Roblox auf
+  den Zeiger), und springt in die **Bildschirmmitte**, sobald Roblox den Zeiger
+  versteckt (Shift-Lock, Ego-Perspektive) – Einstellung „Position: Automatisch“
+- erscheint **nur, wenn Roblox im Vordergrund ist** – kein Startskript nötig
+- **Schalter „Fadenkreuz“** im Schnellmenü oben rechts und Tastenkürzel
+  (Standard: **Super + Alt + C**, Super = Windows-Taste)
+- alle Einstellungen in einem normalen Einstellungsfenster
+
+### Installieren (einmalig)
+
+1. Terminal öffnen und einfügen:
+   ```bash
+   curl -L -o /tmp/fadenkreuz.zip https://github.com/Natscho2001/roblox-crosshair/releases/latest/download/roblox-crosshair@natscho2001.github.io.shell-extension.zip
+   gnome-extensions install --force /tmp/fadenkreuz.zip
+   ```
+2. **Abmelden und wieder anmelden** (GNOME lädt neue Erweiterungen erst nach einer
+   neuen Anmeldung).
+3. Einschalten:
+   ```bash
+   gnome-extensions enable roblox-crosshair@natscho2001.github.io
+   ```
+   oder in der App **„Erweiterungen“** bzw. **„Extension Manager“** den Schalter bei
+   „Roblox Fadenkreuz“ umlegen.
+
+Fertig. Roblox ganz normal starten – das Fadenkreuz erscheint, sobald das
+Roblox-Fenster im Vordergrund ist.
+
+### Einstellungen
+
+In der App „Erweiterungen“ auf das Zahnrad bei „Roblox Fadenkreuz“ klicken – oder im
+Terminal `gnome-extensions prefs roblox-crosshair@natscho2001.github.io`. Dort:
+
+| Einstellung | Bedeutung |
+|---|---|
+| **Position** | *Automatisch* (Standard): am Mauszeiger, in der Mitte wenn Roblox den Zeiger versteckt · *Immer am Mauszeiger* · *Immer in der Mitte* |
+| **Anzeigen** | nur wenn Roblox im Vordergrund ist (Standard) · solange Roblox läuft · immer |
+| **Mitte von** | Bildschirm oder Roblox-Fenster (wenn es in der Mitte steht) |
+| Form, Farbe, Größe, Linienstärke, Lücke, Deckkraft, Rand | wie beim KDE-Programm, siehe Tabelle in Schritt 4 |
+| Nach rechts / nach unten | verschieben, falls es nicht genau passt |
+| Tastenkürzel | z. B. `<Super><Alt>c` oder `F8` – eintragen und mit dem Haken bestätigen |
+
+### Wenn etwas nicht klappt (GNOME)
+
+| Problem | Lösung |
+|---|---|
+| Erweiterung taucht nicht auf | Nach dem Installieren ab- und wieder anmelden. |
+| „Nicht kompatibel“ / „Veraltet“ | Die GNOME-Version ist neuer als getestet. `gnome-shell --version` ausführen und mir die Zahl sagen – dann wird die Erweiterung freigegeben. |
+| Fadenkreuz erscheint nicht | Ist es eingeschaltet (Schnellmenü oben rechts)? Ist das Roblox-Fenster im Vordergrund? Testweise „Anzeigen: Immer“ wählen. |
+| Fadenkreuz hängt etwas hinter dem Mauszeiger | Bei sehr schnellen Bewegungen kann es minimal nachziehen; beim Zielen in Ruhe sitzt es genau. |
+| Tastenkürzel geht im Spiel nicht | Manche Spiele im Vollbild blockieren Kürzel – dann den Schalter im Schnellmenü nehmen oder ein anderes Kürzel wählen. |
+| Fehlersuche | `journalctl --user -b -g roblox-crosshair` zeigt Meldungen der Erweiterung. |
+
+**Entfernen:** `gnome-extensions uninstall roblox-crosshair@natscho2001.github.io`
+
+---
+
+## KDE Plasma, Sway, Hyprland
+
+Das Programm ist eine einzelne Datei. Funktioniert unter KDE Plasma 6, Sway und
+Hyprland (Wayland), **nicht** unter GNOME (→ Erweiterung oben) und nicht in einer
+X11-Sitzung. Hinweis: Unter KDE bleibt das Fadenkreuz in der Bildschirmmitte – einem
+Mauszeiger folgen kann ein externes Programm unter Wayland nicht.
 
 ---
 
@@ -190,6 +265,14 @@ zeigt Fehlermeldungen an (mit Strg+C beenden).
   `wp_viewporter` in der echten Bildschirmauflösung gezeichnet – scharf und mittig.
 - Den primären Monitor erfährt es über das KDE-Protokoll `kde_output_order_v1`.
 - Ein-/Ausschalten läuft über einen kleinen Steuer-Socket in `$XDG_RUNTIME_DIR`.
+
+**GNOME-Erweiterung:** `gnome-extension/` (GNOME 45+). Das Fadenkreuz ist ein nicht
+anklickbares Element in der obersten Ebene der GNOME-Oberfläche, außerhalb der
+Eingabe-Region. Die Zeigerposition liest die Erweiterung über GNOMEs eigenen
+`PointerWatcher` (wie die Bildschirmlupe). Paket bauen: `gnome-extension/build.sh dist`.
+Tests: `node --test gnome-extension/tests/*.test.js` und
+`gnome-extension/tests/headless_gnome.sh dist/*.shell-extension.zip` (startet eine
+unsichtbare GNOME Shell).
 
 **Selbst bauen:** Rust installieren (`rustup`), dann
 `cargo build --release --target x86_64-unknown-linux-musl`. Tests: `cargo test` und
