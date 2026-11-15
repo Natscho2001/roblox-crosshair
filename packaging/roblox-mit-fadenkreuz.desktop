@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Roblox mit Fadenkreuz
+GenericName=Roblox (Sober) mit Fadenkreuz-Overlay
+Comment=Startet Roblox über Sober und blendet ein Fadenkreuz in der Bildschirmmitte ein
+Exec=@SCRIPT@ %u
+Icon=org.vinegarhq.Sober
+Terminal=false
+Categories=Game;
+StartupNotify=false

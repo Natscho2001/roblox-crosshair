@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+env:
+  CARGO_TERM_COLOR: always
+  TARGET: x86_64-unknown-linux-musl
+
+jobs:
+  check:
+    name: Format, lint, unit tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - run: cargo fmt --check
+      - run: cargo clippy --locked --all-targets -- -D warnings
+      - run: cargo test --locked
+
+  build:
+    name: Static x86_64 binary
+    needs: check
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ env.TARGET }}
+      - name: Build (musl, fully static)
+        run: cargo build --release --locked --target "$TARGET"
+      - name: Verify the binary has no runtime library dependencies
+        run: |
+          BIN="target/$TARGET/release/roblox-crosshair"
+          file "$BIN"
+          file "$BIN" | grep -Eq "static(-pie)? linked"
+          "$BIN" --version
+      - name: Integration test under a headless Sway (layer-shell, scaling, toggle, reload)
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends sway grim
+          python3 tests/headless_sway.py "target/$TARGET/release/roblox-crosshair"
+      - name: Package release assets
+        run: |
+          mkdir dist
+          cp "target/$TARGET/release/roblox-crosshair" dist/roblox-crosshair
+          cp packaging/roblox-mit-fadenkreuz.sh dist/
+          tar -C dist -czf dist/roblox-crosshair-x86_64-linux.tar.gz roblox-crosshair roblox-mit-fadenkreuz.sh
+          (cd dist && sha256sum roblox-crosshair roblox-mit-fadenkreuz.sh roblox-crosshair-x86_64-linux.tar.gz > SHA256SUMS)
+          cat dist/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: roblox-crosshair-x86_64
+          path: dist/
+          if-no-files-found: error
+
+  release:
+    name: GitHub release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: roblox-crosshair-x86_64
+          path: dist
+      - name: Create or update the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          NOTES="Fadenkreuz-Overlay für KDE Plasma (Wayland), z. B. für Roblox über Sober.
+
+          **Download für den Bazzite-PC:** \`roblox-crosshair\` (einzelne Datei, x86_64, keine Installation von Systempaketen nötig).
+          Anleitung: siehe [README](https://github.com/${GITHUB_REPOSITORY}/blob/${TAG}/README.md)."
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/* --clobber
+          else
+            gh release create "$TAG" dist/* --title "roblox-crosshair $TAG" --notes "$NOTES"
+          fi
