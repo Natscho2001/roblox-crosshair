@@ -1,0 +1,5 @@
+{
+  "private": true,
+  "type": "module",
+  "description": "Only for `node --test` of the pure geometry module; not part of the extension zip."
+}
