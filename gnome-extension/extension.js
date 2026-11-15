@@ -5,6 +5,13 @@
 // non-reactive actor in the top chrome that doesn't touch the input region, so
 // every click and key still goes to the game. It only draws a picture — it never
 // reads from or talks to Roblox.
+//
+// Without Shift-Lock, Roblox aims at the mouse pointer, so the crosshair can follow
+// the pointer (only the shell may read it under Wayland). "auto" follows the pointer
+// while it is visible and jumps to the centre while the game hides it (Shift-Lock,
+// first person), where Roblox aims at the screen centre.
+
+const POINTER_POLL_MS = 8; // ~120 Hz fallback polling while following the pointer
 
 import GObject from 'gi://GObject';
 import Gio from 'gi://Gio';
@@ -15,6 +22,7 @@ import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import {QuickToggle, SystemIndicator} from 'resource:///org/gnome/shell/ui/quickSettings.js';
+import {getPointerWatcher} from 'resource:///org/gnome/shell/ui/pointerWatcher.js';
 
 import {actorPosition, computeLayout, isRobloxIds, parseColor} from './geometry.js';
 
@@ -71,6 +79,22 @@ class Crosshair {
         this._connect(global.display, 'notify::focus-window', () => this._update());
         this._connect(global.display, 'window-created', (_d, win) => this._watch(win));
         this._connect(Main.layoutManager, 'monitors-changed', () => this._update());
+        this._pointerWatch = null;
+        this._tracker = global.backend?.get_cursor_tracker?.() ?? Meta.CursorTracker.get_for_display?.(global.display);
+        if (this._tracker) {
+            for (const sig of ['visibility-changed', 'cursor-changed']) {
+                try {
+                    this._connect(this._tracker, sig, () => this._update());
+                } catch (e) {
+                    // older/newer shells may not have every signal — polling covers it
+                }
+            }
+            try {
+                this._connect(this._tracker, 'position-invalidated', () => this._onPointerMoved());
+            } catch (e) {
+                // polling via the PointerWatcher only
+            }
+        }
         for (const actor of global.get_window_actors())
             this._watch(actor.meta_window);
 
@@ -136,7 +160,34 @@ class Crosshair {
         }
     }
 
+    /** Is the mouse pointer currently shown (not hidden by the game, e.g. Shift-Lock)? */
+    _pointerVisible() {
+        const t = this._tracker;
+        if (!t)
+            return true;
+        if (t.get_pointer_visible && !t.get_pointer_visible())
+            return false;
+        if (t.get_sprite && !t.get_sprite())
+            return false;
+        return true;
+    }
+
+    _followsPointer() {
+        switch (this._settings.get_string('follow')) {
+        case 'pointer':
+            return true;
+        case 'center':
+            return false;
+        default: // auto
+            return this._pointerVisible();
+        }
+    }
+
     _target() {
+        if (this._followsPointer()) {
+            const [x, y] = global.get_pointer();
+            return [x + this._settings.get_double('offset-x'), y + this._settings.get_double('offset-y')];
+        }
         const lm = Main.layoutManager;
         const focused = global.display.focus_window;
         const win = isRoblox(focused) ? focused : this._robloxWindows()[0];
@@ -156,13 +207,34 @@ class Crosshair {
         return [cx + this._settings.get_double('offset-x'), cy + this._settings.get_double('offset-y')];
     }
 
+    _onPointerMoved() {
+        if (!this._area?.visible || !this._followsPointer())
+            return;
+        const [x, y] = global.get_pointer();
+        const [ax, ay] = actorPosition(x + this._settings.get_double('offset-x'),
+            y + this._settings.get_double('offset-y'), this._layout.box);
+        this._area.set_position(ax, ay);
+    }
+
+    _syncPointerWatch(on) {
+        if (on && !this._pointerWatch) {
+            this._pointerWatch = getPointerWatcher().addWatch(POINTER_POLL_MS, () => this._onPointerMoved());
+        } else if (!on && this._pointerWatch) {
+            this._pointerWatch.remove();
+            this._pointerWatch = null;
+        }
+    }
+
     _update() {
         const target = this._shouldShow() ? this._target() : null;
         if (!target) {
             this._area.hide();
             this._setUnredirect(true);
+            this._syncPointerWatch(false);
             return;
         }
+        // In auto mode the pointer can reappear at any time, so keep watching while shown.
+        this._syncPointerWatch(this._settings.get_string('follow') !== 'center');
         const [x, y] = actorPosition(target[0], target[1], this._layout.box);
         this._area.set_position(x, y);
         // Keep it above everything else in the top chrome (e.g. after panels were re-added).
@@ -205,6 +277,7 @@ class Crosshair {
     }
 
     destroy() {
+        this._syncPointerWatch(false);
         this._signals.forEach(([obj, id]) => obj.disconnect(id));
         this._signals = [];
         [...this._windows.keys()].forEach(w => this._unwatch(w));

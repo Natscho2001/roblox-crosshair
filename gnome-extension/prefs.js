@@ -112,7 +112,12 @@ export default class RobloxCrosshairPreferences extends ExtensionPreferences {
             ['roblox-running', 'Solange Roblox läuft'],
             ['always', 'Immer'],
         ]));
-        show.add(comboRow(s, 'center-on', 'Mitte von', 'Roblox am besten maximiert oder im Vollbild spielen', [
+        show.add(comboRow(s, 'follow', 'Position', 'Ohne Shift-Lock zielt Roblox auf den Mauszeiger, mit Shift-Lock auf die Mitte', [
+            ['auto', 'Automatisch (Mauszeiger – Mitte, wenn er versteckt ist)'],
+            ['pointer', 'Immer am Mauszeiger'],
+            ['center', 'Immer in der Mitte'],
+        ]));
+        show.add(comboRow(s, 'center-on', 'Mitte von', 'Gilt, wenn das Fadenkreuz in der Mitte steht', [
             ['monitor', 'Bildschirm'],
             ['window', 'Roblox-Fenster'],
         ]));

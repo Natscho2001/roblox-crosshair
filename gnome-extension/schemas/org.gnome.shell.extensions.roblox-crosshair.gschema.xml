@@ -14,6 +14,15 @@
       <default>'roblox-focused'</default>
       <summary>When to show it: always, while Roblox runs, or only while the Roblox window is focused</summary>
     </key>
+    <key name="follow" type="s">
+      <choices>
+        <choice value="auto"/>
+        <choice value="pointer"/>
+        <choice value="center"/>
+      </choices>
+      <default>'auto'</default>
+      <summary>Where the crosshair sits: on the mouse pointer, in the centre, or auto (pointer while it is visible, centre while the game hides it, e.g. Shift-Lock)</summary>
+    </key>
     <key name="center-on" type="s">
       <choices>
         <choice value="monitor"/>
