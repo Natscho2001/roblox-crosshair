@@ -97,7 +97,7 @@ jobs:
         working-directory: gnome-extension
         run: |
           for f in extension.js prefs.js geometry.js; do node --check "$f"; done
-          node --test tests/
+          node --test tests/*.test.js
       - name: Build the extension zip (compiles the GSettings schema strictly)
         run: gnome-extension/build.sh dist
       - name: Load test in a headless GNOME Shell (Ubuntu 24.04 = GNOME 46)
