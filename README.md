@@ -49,11 +49,35 @@ Fertig. Im Startmenü gibt es jetzt **„Roblox mit Fadenkreuz“**.
    Maustaste ins Leere klicken → *Terminal hier öffnen* →
    `./roblox-crosshair --install` eintippen und Enter drücken.
 
+### Variante C: als AppImage
+
+Wer Programme lieber als AppImage verwaltet (Bazzite bringt dafür **Gear Lever** mit):
+
+1. **[roblox-crosshair-x86_64.AppImage](https://github.com/Natscho2001/roblox-crosshair/releases/latest/download/roblox-crosshair-x86_64.AppImage)**
+   herunterladen.
+2. Doppelklicken. Bazzite öffnet AppImages mit Gear Lever – dort die Datei ins
+   App-Menü übernehmen lassen. Danach gibt es im Startmenü **„Roblox Fadenkreuz“**:
+   Ein Klick darauf blendet das Fadenkreuz ein bzw. wieder aus.
+   (Ohne Gear Lever: Datei wie in Variante B ausführbar machen und doppelklicken.)
+3. Für den gemeinsamen Start mit Roblox einmal im Terminal ausführen – mit dem Pfad, an
+   dem die AppImage-Datei jetzt liegt (Gear Lever zeigt ihn an, meist `~/AppImages/…`):
+   ```bash
+   ~/AppImages/roblox-crosshair-x86_64.AppImage --install
+   ```
+   Wichtig: Wird die AppImage-Datei später verschoben oder umbenannt, diesen Befehl
+   noch einmal ausführen.
+
+In allen Befehlen dieser Anleitung kann statt `~/Applications/roblox-crosshair` auch der
+Pfad zur AppImage-Datei stehen, z. B. beim Kurzbefehl in Schritt 3:
+`/home/BENUTZERNAME/AppImages/roblox-crosshair-x86_64.AppImage --toggle`.
+Das AppImage startet einen Hauch langsamer (es wird bei jedem Aufruf kurz eingehängt) –
+für den Alltag ist die einfache Datei aus Variante A/B die erste Wahl.
+
 `--install` legt drei Dinge an:
 
 | Was | Wo |
 |---|---|
-| Startskript, das Roblox + Fadenkreuz gemeinsam startet | `~/Applications/roblox-mit-fadenkreuz.sh` |
+| Startskript, das Roblox + Fadenkreuz gemeinsam startet | neben dem Programm, z. B. `~/Applications/roblox-mit-fadenkreuz.sh` |
 | Startmenü-Eintrag „Roblox mit Fadenkreuz“ | `~/.local/share/applications/` |
 | Einstellungsdatei mit Erklärungen | `~/.config/roblox-crosshair/config.toml` |
 
@@ -137,7 +161,8 @@ zeigt `roblox-crosshair --list-outputs`.
 | **Fadenkreuz nicht in der Spielmitte** | Roblox maximieren oder F11 (Vollbild). Bleibt ein kleiner Versatz: `offset_x` / `offset_y` anpassen. |
 | **Fadenkreuz auf dem falschen Monitor** | `--list-outputs` ausführen und den Namen bei `output` eintragen. |
 | **Taste (F8) tut nichts** | Im Kurzbefehl den **vollständigen** Pfad verwenden (`/home/…/Applications/roblox-crosshair --toggle`). Prüfen, ob die Taste nicht schon anderweitig belegt ist. |
-| **„Roblox mit Fadenkreuz“ fehlt im Startmenü** | `~/Applications/roblox-crosshair --install` noch einmal ausführen. Wurde die Datei verschoben, ebenfalls neu ausführen. |
+| **„Roblox mit Fadenkreuz“ fehlt im Startmenü** | `~/Applications/roblox-crosshair --install` (bzw. mit dem AppImage-Pfad) noch einmal ausführen. Wurde die Datei verschoben, ebenfalls neu ausführen. |
+| **AppImage startet nicht** („FUSE“ in der Fehlermeldung) | Auf Bazzite sollte das nicht vorkommen. Notlösung: einfach die normale Datei aus Variante A/B verwenden – sie braucht kein FUSE. |
 | **„läuft bereits“** | Es ist schon eins aktiv – mit `--toggle` ein-/ausblenden oder mit `--quit` beenden. |
 | **Fehler in der Konfigurationsdatei** | Die Meldung nennt die Zeile. Notfalls die Datei löschen und `roblox-crosshair --write-config` ausführen. |
 | **Datei lässt sich nicht starten („Permission denied“)** | Ausführbar machen (Schritt 1, Punkt 3) bzw. `chmod +x ~/Applications/roblox-crosshair`. |
@@ -170,6 +195,7 @@ zeigt Fehlermeldungen an (mit Strg+C beenden).
 `cargo build --release --target x86_64-unknown-linux-musl`. Tests: `cargo test` und
 `python3 tests/headless_sway.py target/x86_64-unknown-linux-musl/release/roblox-crosshair`
 (braucht `sway` und `grim`, startet einen unsichtbaren Test-Desktop).
-GitHub Actions baut bei jedem Tag `v*` automatisch ein Release.
+GitHub Actions baut bei jedem Tag `v*` automatisch ein Release (einfache Datei + AppImage,
+beide im Test-Desktop geprüft).
 
 Lizenz: MIT

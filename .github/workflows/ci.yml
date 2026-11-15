@@ -58,7 +58,26 @@ jobs:
           cp "target/$TARGET/release/roblox-crosshair" dist/roblox-crosshair
           cp packaging/roblox-mit-fadenkreuz.sh dist/
           tar -C dist -czf dist/roblox-crosshair-x86_64-linux.tar.gz roblox-crosshair roblox-mit-fadenkreuz.sh
-          (cd dist && sha256sum roblox-crosshair roblox-mit-fadenkreuz.sh roblox-crosshair-x86_64-linux.tar.gz > SHA256SUMS)
+      - name: Build the AppImage
+        run: |
+          mkdir -p AppDir/usr/bin
+          cp "target/$TARGET/release/roblox-crosshair" AppDir/usr/bin/
+          cp packaging/appimage/roblox-crosshair.desktop packaging/appimage/roblox-crosshair.svg AppDir/
+          ln -s usr/bin/roblox-crosshair AppDir/AppRun
+          curl -sSfL -o appimagetool \
+            https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool
+          # No FUSE on the runner: extract-and-run instead of mounting.
+          ARCH=x86_64 APPIMAGE_EXTRACT_AND_RUN=1 ./appimagetool --no-appstream AppDir dist/roblox-crosshair-x86_64.AppImage
+          APPIMAGE_EXTRACT_AND_RUN=1 dist/roblox-crosshair-x86_64.AppImage --version
+      - name: Integration test of the AppImage under a headless Sway
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: "1"
+        run: python3 tests/headless_sway.py dist/roblox-crosshair-x86_64.AppImage
+      - name: Checksums
+        run: |
+          (cd dist && sha256sum roblox-crosshair roblox-crosshair-x86_64.AppImage roblox-mit-fadenkreuz.sh \
+            roblox-crosshair-x86_64-linux.tar.gz > SHA256SUMS)
           cat dist/SHA256SUMS
       - uses: actions/upload-artifact@v4
         with:
@@ -86,7 +105,8 @@ jobs:
         run: |
           NOTES="Fadenkreuz-Overlay für KDE Plasma (Wayland), z. B. für Roblox über Sober.
 
-          **Download für den Bazzite-PC:** \`roblox-crosshair\` (einzelne Datei, x86_64, keine Installation von Systempaketen nötig).
+          **Download für den Bazzite-PC:** \`roblox-crosshair\` (einzelne Datei, x86_64, keine Installation von Systempaketen nötig)
+          oder \`roblox-crosshair-x86_64.AppImage\` (zum Doppelklicken bzw. für Gear Lever).
           Anleitung: siehe [README](https://github.com/${GITHUB_REPOSITORY}/blob/${TAG}/README.md)."
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" dist/* --clobber

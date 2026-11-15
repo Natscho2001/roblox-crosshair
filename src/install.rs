@@ -41,11 +41,34 @@ pub fn desktop_entry(script: &Path) -> String {
     DESKTOP.replace("@SCRIPT@", &desktop_quote(script))
 }
 
+/// The file the user actually runs. Inside an AppImage `current_exe()` points into the
+/// temporary mount (/tmp/.mount_…), which is gone once it exits — use `$APPIMAGE` then.
+fn program_path() -> Result<PathBuf, String> {
+    if let Some(p) = std::env::var_os("APPIMAGE").filter(|v| !v.is_empty()) {
+        return Ok(PathBuf::from(p));
+    }
+    std::env::current_exe().map_err(|e| format!("Programmpfad unbekannt: {e}"))
+}
+
+/// Quote for /bin/sh: single quotes, with embedded ' as '\''.
+fn sh_quote(p: &Path) -> String {
+    format!("'{}'", p.to_string_lossy().replace('\'', "'\\''"))
+}
+
+/// The launcher script with the absolute path of this program (plain binary or AppImage,
+/// whatever its file name) instead of looking for `roblox-crosshair` next to itself.
+pub fn launcher_script(program: &Path) -> String {
+    LAUNCHER.replace(LAUNCHER_BIN_LINE, &format!("BIN={}", sh_quote(program)))
+}
+
+const LAUNCHER_BIN_LINE: &str = "BIN=\"$DIR/roblox-crosshair\"";
+
 pub fn install(config_path: &Path) -> Result<(), String> {
-    let exe = std::env::current_exe().map_err(|e| format!("Programmpfad unbekannt: {e}"))?;
-    let dir = exe.parent().ok_or("Programmordner unbekannt")?;
+    let program = program_path()?;
+    let dir = program.parent().ok_or("Programmordner unbekannt")?;
     let script = dir.join(LAUNCHER_NAME);
-    fs::write(&script, LAUNCHER).map_err(|e| format!("{}: {e}", script.display()))?;
+    fs::write(&script, launcher_script(&program))
+        .map_err(|e| format!("{}: {e}", script.display()))?;
     fs::set_permissions(&script, fs::Permissions::from_mode(0o755)).map_err(|e| e.to_string())?;
     println!("✔ Startskript:       {}", script.display());
 
@@ -67,7 +90,7 @@ pub fn install(config_path: &Path) -> Result<(), String> {
 pub fn uninstall() -> Result<(), String> {
     let desktop = applications_dir().join(DESKTOP_NAME);
     let _ = fs::remove_file(&desktop);
-    if let Some(dir) = std::env::current_exe()
+    if let Some(dir) = program_path()
         .ok()
         .and_then(|e| e.parent().map(Path::to_path_buf))
     {
@@ -106,6 +129,21 @@ mod tests {
             e.contains("Exec=\"/home/kid/Meine Programme/x.sh\" %u"),
             "{e}"
         );
+    }
+
+    #[test]
+    fn launcher_gets_the_absolute_program_path() {
+        assert!(
+            LAUNCHER.contains(LAUNCHER_BIN_LINE),
+            "template line changed — update LAUNCHER_BIN_LINE"
+        );
+        let s = launcher_script(Path::new(
+            "/home/kid/AppImages/roblox-crosshair-x86_64.AppImage",
+        ));
+        assert!(s.contains("BIN='/home/kid/AppImages/roblox-crosshair-x86_64.AppImage'"));
+        assert!(!s.contains(LAUNCHER_BIN_LINE));
+        let s = launcher_script(Path::new("/home/kid/it's here/rc"));
+        assert!(s.contains(r"BIN='/home/kid/it'\''s here/rc'"), "{s}");
     }
 
     #[test]
