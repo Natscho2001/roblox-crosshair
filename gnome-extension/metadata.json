@@ -1,0 +1,9 @@
+{
+  "uuid": "roblox-crosshair@natscho2001.github.io",
+  "name": "Roblox Fadenkreuz",
+  "description": "Durchklickbares Fadenkreuz in der Bildschirmmitte – z. B. für Roblox (Sober). Wird nur angezeigt, während Roblox im Vordergrund ist (einstellbar). Reines Bild-Overlay, greift nicht ins Spiel ein.",
+  "shell-version": ["45", "46", "47", "48", "49", "50", "51"],
+  "settings-schema": "org.gnome.shell.extensions.roblox-crosshair",
+  "url": "https://github.com/Natscho2001/roblox-crosshair",
+  "version-name": "0.3.0"
+}

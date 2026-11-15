@@ -85,10 +85,37 @@ jobs:
           path: dist/
           if-no-files-found: error
 
+  gnome-extension:
+    name: GNOME Shell extension
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax check + geometry unit tests
+        working-directory: gnome-extension
+        run: |
+          for f in extension.js prefs.js geometry.js; do node --check "$f"; done
+          node --test tests/*.test.js
+      - name: Build the extension zip (compiles the GSettings schema strictly)
+        run: gnome-extension/build.sh dist
+      - name: Load test in a headless GNOME Shell (Ubuntu 24.04 = GNOME 46)
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends gnome-shell dbus-daemon
+          gnome-shell --version
+          gnome-extension/tests/headless_gnome.sh dist/roblox-crosshair@natscho2001.github.io.shell-extension.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gnome-extension
+          path: dist/
+          if-no-files-found: error
+
   release:
     name: GitHub release
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: build
+    needs: [build, gnome-extension]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -96,8 +123,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: roblox-crosshair-x86_64
           path: dist
+          merge-multiple: true
       - name: Create or update the release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -107,6 +134,9 @@ jobs:
 
           **Download für den Bazzite-PC:** \`roblox-crosshair\` (einzelne Datei, x86_64, keine Installation von Systempaketen nötig)
           oder \`roblox-crosshair-x86_64.AppImage\` (zum Doppelklicken bzw. für Gear Lever).
+
+          **GNOME** (z. B. Bazzite GNOME): Dort funktioniert nur die Erweiterung
+          \`roblox-crosshair@natscho2001.github.io.shell-extension.zip\` – siehe README, Abschnitt „GNOME“.
           Anleitung: siehe [README](https://github.com/${GITHUB_REPOSITORY}/blob/${TAG}/README.md)."
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" dist/* --clobber
